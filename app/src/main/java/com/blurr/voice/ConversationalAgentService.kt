@@ -495,9 +495,13 @@ class ConversationalAgentService : Service() {
 
 
     private suspend fun tryHandleLocalAppLaunch(userInput: String): Boolean {
-        val match = Regex("""(?i)\\b(?:please\\s+)?(?:open|launch|start)\\s+(?:the\\s+)?(.+?)(?:\\s+(?:app|application))?$""").find(userInput.trim())
-            ?: return false
-        val requestedName = match.groupValues[1].trim().lowercase(java.util.Locale.ROOT)
+        val normalized = userInput.trim().lowercase(java.util.Locale.ROOT)
+        val requestedName = when {
+            normalized.startsWith("open ") -> normalized.removePrefix("open ").trim()
+            normalized.startsWith("launch ") -> normalized.removePrefix("launch ").trim()
+            normalized.startsWith("start ") -> normalized.removePrefix("start ").trim()
+            else -> return false
+        }.removeSuffix(" app").removeSuffix(" application").trim()
         if (requestedName.isBlank()) return false
 
         val specialIntent = when (requestedName) {

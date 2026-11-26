@@ -53,6 +53,10 @@ fun addResponsePrePost(
 suspend fun getReasoningModelApiResponse(
     chat: List<Pair<String, List<Any>>>,
 ): String? {
-    return GeminiApi.generateContent(chat) // MODIFIED: Pass agent state
+    return try {
+        GeminiApi.generateContent(chat)
+    } catch (e: IllegalStateException) {
+        """{"Type":"Reply","Reply":"No Gemini API key is configured. Open Settings and save at least one Google AI Studio API key.","Instruction":"","Should End":"Continue"}"""
+    }
 }
 

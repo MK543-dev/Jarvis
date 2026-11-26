@@ -111,8 +111,15 @@ object GeminiApi {
                         throw LegacyGeminiHttpException(response.code, "API Error ${response.code}: $responseBody")
                     }
 
-                    // Assuming the proxy returns the standard Gemini API response format
-                    val parsedResponse = responseBody
+                    // Proxy and direct Gemini return different envelopes. Extract the assistant text
+                    // before returning it so callers receive usable JSON/response text.
+                    val parsedResponse = if (useProxy) {
+                        if (responseBody.trimStart().startsWith("{")) {
+                            parseSuccessResponse(responseBody) ?: responseBody
+                        } else responseBody
+                    } else {
+                        parseSuccessResponse(responseBody) ?: responseBody
+                    }
 
                     val logEntry = createLogEntry(
                         attempt = attempts + 1,

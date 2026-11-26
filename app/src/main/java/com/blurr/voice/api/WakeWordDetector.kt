@@ -14,7 +14,7 @@ class WakeWordDetector(
 ) {
     private var sttManager: STTManager? = null
     private val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
-    private val wakeWord = "Jarvis"
+    private val wakeWord = "hey jarvis"
     private var isListening = false
     private val handler = Handler(Looper.getMainLooper())
     private val restartDelayMs = 250L
@@ -58,7 +58,8 @@ class WakeWordDetector(
         sttManager?.startListening(
             onResult = { recognizedText ->
                 Log.d("WakeWordDetector", "Recognized: '$recognizedText'")
-                if (recognizedText.lowercase(Locale.ROOT).contains(wakeWord.lowercase(Locale.ROOT))) {
+                val normalized = recognizedText.lowercase(Locale.ROOT).trim()
+                if (normalized.contains(wakeWord)) {
                     onWakeWordDetected()
                 }
                 restartListening()
