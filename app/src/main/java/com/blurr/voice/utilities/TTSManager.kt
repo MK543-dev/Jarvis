@@ -316,6 +316,11 @@ class TTSManager private constructor(private val context: Context) : TextToSpeec
     }
 
     private suspend fun speak(text: String) {
+        if (BuildConfig.GOOGLE_TTS_API_KEY.isBlank()) {
+            isNativeTtsInitialized.await()
+            nativeTts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, this.hashCode().toString())
+            return
+        }
         try {
             val selectedVoice = VoicePreferenceManager.getSelectedVoice(context)
             
@@ -575,8 +580,15 @@ class TTSManager private constructor(private val context: Context) : TextToSpeec
 
         } catch (e: Exception) {
             if (e is CancellationException) throw e
-            Log.e("TTSManager", "Failed to speak chunk: ${chunk.take(50)}... Error: ${e.message}")
-            // Continue with next chunk instead of falling back to native TTS for the entire text
+            Log.e("TTSManager", "Failed to synthesize or play chunk: ${chunk.take(50)}... Error: ${e.message}. Falling back to native TTS.")
+            try {
+                isNativeTtsInitialized.await()
+                withContext(Dispatchers.Main) {
+                    nativeTts?.speak(chunk, TextToSpeech.QUEUE_ADD, null, this.hashCode().toString())
+                }
+            } catch (fallbackError: Exception) {
+                Log.e("TTSManager", "Native TTS fallback failed", fallbackError)
+            }
         }
     }
 

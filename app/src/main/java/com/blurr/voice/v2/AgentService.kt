@@ -25,17 +25,11 @@ import com.blurr.voice.v2.llm.GeminiApi
 import com.blurr.voice.v2.message_manager.MemoryManager
 import com.blurr.voice.v2.perception.Perception
 import com.blurr.voice.v2.perception.SemanticParser
-import com.google.firebase.Firebase
-import com.google.firebase.Timestamp
-import com.google.firebase.auth.auth
-import com.google.firebase.firestore.FieldValue
-import com.google.firebase.firestore.firestore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.tasks.await
 import java.util.Queue
 import java.util.concurrent.ConcurrentLinkedQueue
 
@@ -66,9 +60,6 @@ class AgentService : Service() {
     private lateinit var actionExecutor: ActionExecutor
     private lateinit var overlayManager: OverlayManager
 
-    // Firebase instances for task tracking
-    private val db = Firebase.firestore
-    private val auth = Firebase.auth
 
     companion object {
         private const val NOTIFICATION_CHANNEL_ID = "AgentServiceChannelV2"
@@ -96,6 +87,11 @@ class AgentService : Service() {
         }
 
         fun start(context: Context, task: String) {
+            val launchIntent = context.packageManager.getLaunchIntentForPackage(context.packageName)
+            if (launchIntent == null) {
+                Log.e("AgentService", "Jarvis package is not launchable; rejecting task")
+                return
+            }
             Log.d("AgentService", "Starting service with task: $task")
             val intent = Intent(context, AgentService::class.java).apply {
                 putExtra(EXTRA_TASK, task)
@@ -128,7 +124,7 @@ class AgentService : Service() {
         memoryManager = MemoryManager(this, "", fileSystem, settings)
         perception = Perception(Eyes(this), SemanticParser())
         llmApi = GeminiApi(
-            "gemini-2.5-flash",
+            "gemini-2.5-flash-lite",
             apiKeyManager = ApiKeyManager,
             context = this,
             maxRetry = 10
@@ -148,6 +144,10 @@ class AgentService : Service() {
     @RequiresApi(Build.VERSION_CODES.R)
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         Log.d(TAG, "onStartCommand received.")
+        if (packageManager.getLaunchIntentForPackage(packageName) == null) {
+            Log.e(TAG, "Jarvis package is not launchable; ignoring task entry")
+            return START_NOT_STICKY
+        }
 
         // Handle stop action
         if (intent?.action == ACTION_STOP_SERVICE) {
@@ -201,7 +201,7 @@ class AgentService : Service() {
 
             try {
                 Log.i(TAG, "Executing task: $task")
-                trackTaskInFirebase(task)
+                trackTaskLocal(task)
                 agent.run(task)
                 trackTaskCompletion(task, true)
                 Log.i(TAG, "Task completed successfully: $task")
@@ -269,11 +269,11 @@ class AgentService : Service() {
         )
 
         return NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
-            .setContentTitle("Panda Doing Task (Expand to stop Panda)")
+            .setContentTitle("Jarvis Doing Task (Expand to stop Jarvis)")
             .setContentText(contentText)
             .addAction(
                 android.R.drawable.ic_media_pause, // Using built-in pause icon as stop button
-                "Stop Panda",
+                "Stop Jarvis",
                 stopPendingIntent
             )
             .setOngoing(true) // Makes notification persistent and harder to dismiss
@@ -281,69 +281,9 @@ class AgentService : Service() {
             .build()
     }
 
-    /**
-     * Tracks the task start in Firebase by appending it to the user's task history array.
-     * This method is inspired by FreemiumManager's Firebase operations.
-     */
-    private suspend fun trackTaskInFirebase(task: String) {
-        val currentUser = auth.currentUser
-        if (currentUser == null) {
-            Log.w(TAG, "Cannot track task, user is not logged in.")
-            return
-        }
+    private suspend fun trackTaskLocal(task: String) { Log.d(TAG, "Task tracking disabled") }
 
-        try {
-            val taskEntry = hashMapOf(
-                "task" to task,
-                "status" to "started",
-                "startedAt" to Timestamp.now(),
-                "completedAt" to null,
-                "success" to null,
-                "errorMessage" to null
-            )
-
-            // Append the task to the user's taskHistory array
-            db.collection("users").document(currentUser.uid)
-                .update("taskHistory", FieldValue.arrayUnion(taskEntry))
-                .await()
-
-            Log.d(TAG, "Successfully tracked task start in Firebase for user ${currentUser.uid}: $task")
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to track task in Firebase", e)
-            // Don't fail the task execution if Firebase tracking fails
-        }
-    }
-
-    /**
-     * Updates the task completion status in Firebase.
-     * Since Firestore doesn't support updating array elements directly,
-     * we'll add a new completion entry to track the result.
-     */
     private suspend fun trackTaskCompletion(task: String, success: Boolean, errorMessage: String? = null) {
-        val currentUser = auth.currentUser
-        if (currentUser == null) {
-            Log.w(TAG, "Cannot track task completion, user is not logged in.")
-            return
-        }
-
-        try {
-            val completionEntry = hashMapOf(
-                "task" to task,
-                "status" to if (success) "completed" else "failed",
-//                "startedAt" to null, // This is a completion entry, not a start entry
-                "completedAt" to Timestamp.now(),
-                "success" to success,
-                "errorMessage" to errorMessage
-            )
-
-            // Append the completion status to the user's taskHistory array
-            db.collection("users").document(currentUser.uid)
-                .update("taskHistory", FieldValue.arrayUnion(completionEntry))
-                .await()
-
-            Log.d(TAG, "Successfully tracked task completion in Firebase for user ${currentUser.uid}: $task (success: $success)")
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to track task completion in Firebase", e)
-        }
+        Log.d(TAG, "Task completion tracking disabled")
     }
 }

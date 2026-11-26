@@ -9,12 +9,12 @@ import org.mockito.junit.MockitoJUnitRunner
 import org.junit.Assert.*
 
 @RunWith(MockitoJUnitRunner::class)
-class PandaStateManagerTest {
+class JarvisStateManagerTest {
 
     @Mock
     private lateinit var mockContext: Context
 
-    private lateinit var stateManager: PandaStateManager
+    private lateinit var stateManager: JarvisStateManager
 
     @Before
     fun setUp() {
@@ -23,15 +23,15 @@ class PandaStateManagerTest {
     }
 
     @Test
-    fun testPandaStateEnum() {
+    fun testJarvisStateEnum() {
         // Test that all required states exist
-        val states = PandaState.values()
+        val states = JarvisState.values()
         
-        assertTrue("IDLE state should exist", states.contains(PandaState.IDLE))
-        assertTrue("LISTENING state should exist", states.contains(PandaState.LISTENING))
-        assertTrue("PROCESSING state should exist", states.contains(PandaState.PROCESSING))
-        assertTrue("SPEAKING state should exist", states.contains(PandaState.SPEAKING))
-        assertTrue("ERROR state should exist", states.contains(PandaState.ERROR))
+        assertTrue("IDLE state should exist", states.contains(JarvisState.IDLE))
+        assertTrue("LISTENING state should exist", states.contains(JarvisState.LISTENING))
+        assertTrue("PROCESSING state should exist", states.contains(JarvisState.PROCESSING))
+        assertTrue("SPEAKING state should exist", states.contains(JarvisState.SPEAKING))
+        assertTrue("ERROR state should exist", states.contains(JarvisState.ERROR))
         
         // Verify we have exactly 5 states as required
         assertEquals("Should have exactly 5 states", 5, states.size)

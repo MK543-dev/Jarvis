@@ -8,9 +8,6 @@ import com.blurr.voice.MyApplication
 import com.blurr.voice.utilities.ApiKeyManager
 import com.google.ai.client.generativeai.type.ImagePart
 import com.google.ai.client.generativeai.type.TextPart
-import com.google.firebase.Firebase
-import com.google.firebase.firestore.FieldValue
-import com.google.firebase.firestore.firestore
 import kotlinx.coroutines.delay
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -40,13 +37,12 @@ object GeminiApi {
         .readTimeout(90, TimeUnit.SECONDS)
         .writeTimeout(60, TimeUnit.SECONDS)
         .build()
-    val db = Firebase.firestore
 
 
     suspend fun generateContent(
         chat: List<Pair<String, List<Any>>>,
         images: List<Bitmap> = emptyList(),
-        modelName: String = "gemini-2.5-flash", // Updated to a more standard model name
+        modelName: String = "gemini-2.5-flash-lite",
         maxRetry: Int = 4,
         context: Context? = null
     ): String? {
@@ -72,7 +68,7 @@ object GeminiApi {
         var attempts = 0
         while (attempts < maxRetry) {
             // Get a new API key for each attempt
-            val currentApiKey = ApiKeyManager.getNextKey()
+            val currentApiKey = ApiKeyManager.getNextKey(context)
             Log.d("GeminiApi", "=== GEMINI API REQUEST (Attempt ${attempts + 1}) ===")
             Log.d("GeminiApi", "Using API key ending in: ...${currentApiKey.takeLast(4)}")
             Log.d("GeminiApi", "Model: $modelName")
@@ -87,12 +83,17 @@ object GeminiApi {
             Log.d("GeminiApi", "Payload: ${payload.toString().take(500)}...")
 
             try {
-                val request = Request.Builder()
-                    .url(proxyUrl)
-                    .post(payload.toString().toRequestBody("application/json".toMediaType()))
+                val useProxy = proxyUrl.isNotBlank() && proxyKey.isNotBlank()
+                val requestPayload = if (useProxy) payload else buildDirectPayload(chat, modelName)
+                val requestBuilder = Request.Builder()
+                    .post(requestPayload.toString().toRequestBody("application/json".toMediaType()))
                     .addHeader("Content-Type", "application/json")
-                    .addHeader("X-API-Key", proxyKey)
-                    .build()
+                val request = if (useProxy) {
+                    requestBuilder.url(proxyUrl).addHeader("X-API-Key", proxyKey).build()
+                } else {
+                    val directUrl = "https://generativelanguage.googleapis.com/v1beta/models/$modelName:generateContent"
+                    requestBuilder.url(directUrl).addHeader("x-goog-api-key", currentApiKey).build()
+                }
 
                 val requestStartTime = System.currentTimeMillis()
                 client.newCall(request).execute().use { response ->
@@ -107,7 +108,7 @@ object GeminiApi {
 
                     if (!response.isSuccessful || responseBody.isNullOrEmpty()) {
                         Log.e("GeminiApi", "API call failed with HTTP ${response.code}. Response: $responseBody")
-                        throw Exception("API Error ${response.code}: $responseBody")
+                        throw LegacyGeminiHttpException(response.code, "API Error ${response.code}: $responseBody")
                     }
 
                     // Assuming the proxy returns the standard Gemini API response format
@@ -136,7 +137,6 @@ object GeminiApi {
                         responseBody = responseBody,
                         status = "pass",
                     )
-                    logToFirestore(logData)
 
 
                     return parsedResponse
@@ -173,12 +173,16 @@ object GeminiApi {
                     responseBody = null,
                     error = e.message
                 )
-                logToFirestore(logData)
 
                 attempts++
                 if (attempts < maxRetry) {
-                    val delayTime = 1000L * attempts
-                    Log.d("GeminiApi", "Retrying in ${delayTime}ms...")
+                    val isRateLimited = e is LegacyGeminiHttpException && e.code == 429 || e.message?.contains("429") == true
+                    val delayTime = if (isRateLimited) when (attempts) {
+                        1 -> 2_000L
+                        2 -> 5_000L
+                        else -> 10_000L
+                    } else 2_000L
+                    Log.d("GeminiApi", "Retrying with key rotation in ${delayTime}ms...")
                     delay(delayTime)
                 } else {
                     Log.e("GeminiApi", "Request failed after all ${maxRetry} retries.")
@@ -194,6 +198,20 @@ object GeminiApi {
      * The new structure is: { "modelName": "...", "messages": [ { "role": "...", "parts": [ { "text": "..." } ] } ] }
      * NOTE: This proxy structure does not support images. ImageParts will be ignored.
      */
+    private fun buildDirectPayload(chat: List<Pair<String, List<Any>>>, modelName: String): JSONObject {
+        val contents = JSONArray()
+        chat.forEach { (role, parts) ->
+            val content = JSONObject().put("role", if (role.lowercase() == "model") "model" else "user")
+            val jsonParts = JSONArray()
+            parts.forEach { part ->
+                if (part is TextPart) jsonParts.put(JSONObject().put("text", part.text))
+            }
+            content.put("parts", jsonParts)
+            contents.put(content)
+        }
+        return JSONObject().put("contents", contents)
+    }
+
     private fun buildPayload(chat: List<Pair<String, List<Any>>>, modelName: String): JSONObject {
         val rootObject = JSONObject()
         rootObject.put("modelName", modelName)
@@ -297,29 +315,6 @@ object GeminiApi {
             Log.e("GeminiApi", "Failed to save log to file", e)
         }
     }
-    private fun logToFirestore(logData: Map<String, Any?>) {
-        // Create a unique and descriptive ID from the timestamp and prompt
-        val timestamp = System.currentTimeMillis()
-        val promptSnippet = (logData["prompt"] as? String)?.take(40) ?: "log"
-
-        // Sanitize the prompt snippet to be a valid Firestore document ID
-        // (removes spaces and special characters)
-        val sanitizedPrompt = promptSnippet.replace(Regex("[^a-zA-Z0-9]"), "_")
-
-        val documentId = "${timestamp}_$sanitizedPrompt"
-
-        // Use .document(ID).set(data) instead of .add(data)
-        db.collection("gemini_logs")
-            .document(documentId)
-            .set(logData)
-            .addOnSuccessListener {
-                Log.d("GeminiApi", "Log sent to Firestore with ID: $documentId")
-            }
-            .addOnFailureListener { e ->
-                // This listener is for debugging; it won't block your app's flow
-                Log.e("GeminiApi", "Error sending log to Firestore", e)
-            }
-    }
     private fun createLogEntry(
         attempt: Int,
         modelName: String,
@@ -365,7 +360,7 @@ object GeminiApi {
         error: String? = null
     ): Map<String, Any?> {
         return mapOf(
-            "timestamp" to FieldValue.serverTimestamp(), // Use server time
+            "timestamp" to System.currentTimeMillis(),
             "status" to status,
             "attempt" to attempt,
             "model" to modelName,
@@ -379,3 +374,5 @@ object GeminiApi {
         )
     }
 }
+
+private class LegacyGeminiHttpException(val code: Int, message: String) : Exception(message)

@@ -34,7 +34,7 @@ import kotlin.time.Duration.Companion.seconds
  * - Efficient caching of `GenerativeModel` instances to reduce overhead.
  * - Structured JSON output enforcement using `response_schema`.
  *
- * @property modelName The name of the Gemini model to use (e.g., "gemini-1.5-flash").
+ * @property modelName The name of the Gemini model to use (default: "gemini-2.5-flash-lite").
  * @property apiKeyManager An instance of [ApiKeyManager] to handle API key retrieval.
  * @property maxRetry The maximum number of times to retry a failed API call.
  */
@@ -82,7 +82,7 @@ class GeminiApi(
      * @return An [AgentOutput] object on success, or null if the API call or parsing fails after all retries.
      */
     suspend fun generateAgentOutput(messages: List<GeminiMessage>): AgentOutput? {
-        val jsonString = retryWithBackoff(times = maxRetry) {
+        val jsonString = retryWithFixedBackoff(times = maxRetry) {
             performApiCall(messages)
         } ?: return null
 
@@ -143,7 +143,7 @@ class GeminiApi(
             if (!response.isSuccessful || responseBodyString.isNullOrBlank()) {
                 val errorMsg = "Proxy API call failed with code: ${response.code}, body: $responseBodyString"
                 Log.e(TAG, errorMsg)
-                throw IOException(errorMsg)
+                throw GeminiHttpException(response.code, errorMsg)
             }
             Log.d(TAG, "Successfully received response from proxy.")
             return responseBodyString
@@ -154,7 +154,7 @@ class GeminiApi(
      * DIRECT MODE: Performs the API call using the embedded Google AI SDK.
      */
     private suspend fun performDirectApiCall(messages: List<GeminiMessage>): String {
-        val apiKey = apiKeyManager.getNextKey()
+        val apiKey = apiKeyManager.getNextKey(context)
         val generativeModel = modelCache.getOrPut(apiKey) {
             Log.d(TAG, "Creating new GenerativeModel instance for key ending in ...${apiKey.takeLast(4)}")
             GenerativeModel(
@@ -208,7 +208,7 @@ class GeminiApi(
      * @return The generated text content as a String, or null on failure.
      */
     suspend fun generateGroundedContent(prompt: String): String? {
-        val apiKey = apiKeyManager.getNextKey() // Reuse your existing key manager
+        val apiKey = apiKeyManager.getNextKey(context)
 
         val mediaType = "application/json; charset=utf-8".toMediaType()
         val url = "https://generativelanguage.googleapis.com/v1beta/models/$modelName:generateContent"
@@ -293,26 +293,21 @@ class ContentBlockedException(message: String) : Exception(message)
  * @param block The suspend block of code to execute and retry on failure.
  * @return The result of the block if successful, or null if all retries fail.
  */
-private suspend fun <T> retryWithBackoff(
-    times: Int,
-    initialDelay: Long = 1000L, // 1 second
-    maxDelay: Long = 16000L,   // 16 seconds
-    factor: Double = 2.0,
-    block: suspend () -> T
-): T? {
-    var currentDelay = initialDelay
+private suspend fun <T> retryWithFixedBackoff(times: Int, block: suspend () -> T): T? {
+    val delays = longArrayOf(2_000L, 5_000L, 10_000L)
     repeat(times) { attempt ->
         try {
             return block()
         } catch (e: Exception) {
+            val isRateLimited = e is GeminiHttpException && e.code == 429 ||
+                e.message?.contains("429") == true
             Log.e("RetryUtil", "Attempt ${attempt + 1}/$times failed: ${e.message}", e)
-            if (attempt == times - 1) {
-                Log.e("RetryUtil", "All $times retry attempts failed.")
-                return null // All retries failed
-            }
-            delay(currentDelay)
-            currentDelay = (currentDelay * factor).toLong().coerceAtMost(maxDelay)
+            if (attempt == times - 1) return null
+            val delayMs = if (isRateLimited) delays[attempt.coerceAtMost(delays.lastIndex)] else 2_000L
+            delay(delayMs)
         }
     }
-    return null // Should not be reached
+    return null
 }
+
+private class GeminiHttpException(val code: Int, message: String) : IOException(message)

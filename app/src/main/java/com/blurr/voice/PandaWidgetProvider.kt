@@ -8,7 +8,7 @@ import android.content.Intent
 import android.os.Build
 import android.widget.RemoteViews
 
-class PandaWidgetProvider : AppWidgetProvider() {
+class JarvisWidgetProvider : AppWidgetProvider() {
 
     override fun onUpdate(
         context: Context,
@@ -20,7 +20,7 @@ class PandaWidgetProvider : AppWidgetProvider() {
             // Create an Intent to launch MainActivity with our custom action.
             // THIS IS THE SAME ACTION WE USED FOR THE APP SHORTCUT!
             val intent = Intent(context, MainActivity::class.java)
-            intent.action = "com.blurr.voice.WAKE_UP_PANDA"
+            intent.action = "com.jarvis.assistant.WAKE_UP_JARVIS"
 
             // Create a PendingIntent that will be triggered when the widget is clicked.
             val pendingIntent = PendingIntent.getActivity(

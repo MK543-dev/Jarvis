@@ -95,9 +95,10 @@
 
         </LinearLayout>
 
-        <!-- Upgrade -->
+        <!-- Upgrade (disabled; Jarvis is unlocked) -->
         <LinearLayout
             android:id="@+id/nav_upgrade"
+            android:visibility="gone"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
