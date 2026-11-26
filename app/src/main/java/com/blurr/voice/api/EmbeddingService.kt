@@ -87,11 +87,8 @@ object EmbeddingService {
                 Log.e("EmbeddingService", "=== EMBEDDING API ERROR (Attempt ${attempts + 1}) ===", e)
                 attempts++
                 if (attempts < maxRetries) {
-                    val isRateLimited = e.message?.contains("429") == true
-                    val delayTime = if (isRateLimited) {
-                        when (attempts) { 1 -> 2_000L; 2 -> 5_000L; else -> 10_000L }
-                    } else 1_000L * attempts
-                    Log.d("EmbeddingService", "Retrying with API key rotation in ${delayTime}ms...")
+                    val delayTime = 1000L * attempts
+                    Log.d("EmbeddingService", "Retrying in ${delayTime}ms...")
                     delay(delayTime)
                 } else {
                     Log.e("EmbeddingService", "Embedding generation failed after all $maxRetries retries.")

@@ -42,8 +42,6 @@ class SettingsActivity : BaseNavigationActivity() {
     private lateinit var editUserName: android.widget.EditText
     private lateinit var editUserEmail: android.widget.EditText
     private lateinit var editWakeWordKey: android.widget.EditText
-    private lateinit var editGeminiApiKeys: android.widget.EditText
-    private lateinit var saveGeminiApiKeysButton: TextView
     private lateinit var textGetPicovoiceKeyLink: TextView
     private lateinit var wakeWordButton: TextView
     private lateinit var buttonSignOut: Button
@@ -110,8 +108,6 @@ class SettingsActivity : BaseNavigationActivity() {
         batteryOptimizationHelpButton = findViewById(R.id.batteryOptimizationHelpButton)
       
         editWakeWordKey = findViewById(R.id.editWakeWordKey)
-        editGeminiApiKeys = findViewById(R.id.editGeminiApiKeys)
-        saveGeminiApiKeysButton = findViewById(R.id.saveGeminiApiKeysButton)
         wakeWordButton = findViewById(R.id.wakeWordButton)
 
         buttonSignOut = findViewById(R.id.buttonSignOut)
@@ -152,11 +148,6 @@ class SettingsActivity : BaseNavigationActivity() {
         batteryOptimizationHelpButton.setOnClickListener {
             showBatteryOptimizationDialog()
         }
-        saveGeminiApiKeysButton.setOnClickListener {
-            val keys = editGeminiApiKeys.text.toString().trim()
-            com.blurr.voice.utilities.ApiKeyManager.saveKeys(this, keys)
-            Toast.makeText(this, "Gemini API keys saved.", Toast.LENGTH_SHORT).show()
-        }
         wakeWordButton.setOnClickListener {
             val keyManager = PicovoiceKeyManager(this)
             
@@ -167,7 +158,15 @@ class SettingsActivity : BaseNavigationActivity() {
                 Toast.makeText(this, "Wake word key saved.", Toast.LENGTH_SHORT).show()
             }
             
-            // Use native fallback when no commercial wake-word key is configured.
+            // Step 2: Check if we have a key (either just saved or previously saved)
+            val hasKey = !keyManager.getUserProvidedKey().isNullOrBlank()
+            
+            if (!hasKey) {
+                showPicovoiceKeyRequiredDialog()
+                return@setOnClickListener
+            }
+            
+            // Step 3: Enable the wake word
             wakeWordManager.handleWakeWordButtonClick(wakeWordButton)
             // Give the service a moment to update its state before refreshing the UI
             android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({ updateWakeWordButtonState() }, 500)
@@ -248,7 +247,6 @@ class SettingsActivity : BaseNavigationActivity() {
 
     private fun cacheVoiceSamples() {
         lifecycleScope.launch(Dispatchers.IO) {
-            if (BuildConfig.GOOGLE_TTS_API_KEY.isBlank()) return@launch
             val cacheDir = File(cacheDir, "voice_samples")
             if (!cacheDir.exists()) cacheDir.mkdirs()
 
@@ -277,8 +275,7 @@ class SettingsActivity : BaseNavigationActivity() {
 
         // Inside loadAllSettings()
         val keyManager = PicovoiceKeyManager(this)
-        editWakeWordKey.setText(keyManager.getUserProvidedKey() ?: "")
-        editGeminiApiKeys.setText(com.blurr.voice.utilities.ApiKeyManager.getSavedKeys(this))
+        editWakeWordKey.setText(keyManager.getUserProvidedKey() ?: "") // You will create this method next
         val savedVoiceName = sharedPreferences.getString(KEY_SELECTED_VOICE, DEFAULT_VOICE.name)
         val savedVoice = availableVoices.find { it.name == savedVoiceName } ?: DEFAULT_VOICE
         ttsVoicePicker.value = availableVoices.indexOf(savedVoice)

@@ -1,18 +1,35 @@
 package com.blurr.voice.data
 
-import java.text.SimpleDateFormat
 import java.util.Date
-import java.util.Locale
 
 data class TaskHistoryItem(
     val task: String,
     val status: String,
-    val startedAt: Date? = null,
-    val completedAt: Date? = null,
-    val success: Boolean? = null,
-    val errorMessage: String? = null
+    val startedAt: Date?,
+    val completedAt: Date?,
+    val success: Boolean?,
+    val errorMessage: String?
 ) {
-    fun getStatusEmoji(): String = if (success == true) "?" else if (status.lowercase() == "failed") "?" else "??"
-    fun getFormattedStartTime(): String = startedAt?.let { SimpleDateFormat("MMM dd, yyyy 'at' h:mm a", Locale.getDefault()).format(it) } ?: "Unknown"
-    fun getFormattedCompletionTime(): String = completedAt?.let { SimpleDateFormat("MMM dd, yyyy 'at' h:mm a", Locale.getDefault()).format(it) } ?: "Not completed"
+    fun getStatusEmoji(): String {
+        return when (status.lowercase()) {
+            "started" -> "🔄"
+            "completed" -> if (success == true) "✅" else "❌"
+            "failed" -> "❌"
+            else -> "⏳"
+        }
+    }
+    
+    fun getFormattedStartTime(): String {
+        return startedAt?.let { date ->
+            val formatter = java.text.SimpleDateFormat("MMM dd, yyyy 'at' h:mm a", java.util.Locale.getDefault())
+            formatter.format(date)
+        } ?: "Unknown"
+    }
+    
+    fun getFormattedCompletionTime(): String {
+        return completedAt?.let { date ->
+            val formatter = java.text.SimpleDateFormat("MMM dd, yyyy 'at' h:mm a", java.util.Locale.getDefault())
+            formatter.format(date)
+        } ?: "Not completed"
+    }
 }

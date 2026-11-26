@@ -5,7 +5,7 @@ import androidx.core.content.ContextCompat
 import com.blurr.voice.R
 
 /**
- * Utility class for mapping JarvisState values to their corresponding colors
+ * Utility class for mapping PandaState values to their corresponding colors
  * and providing state-related information for the delta symbol.
  */
 object DeltaStateColorMapper {
@@ -14,58 +14,58 @@ object DeltaStateColorMapper {
      * Data class representing the visual state of the delta symbol
      */
     data class DeltaVisualState(
-        val state: JarvisState,
+        val state: PandaState,
         val color: Int,
         val statusText: String,
         val colorHex: String
     )
 
     /**
-     * Get the color resource ID for a given JarvisState
+     * Get the color resource ID for a given PandaState
      */
-    fun getColorResourceId(state: JarvisState): Int {
+    fun getColorResourceId(state: PandaState): Int {
         return when (state) {
-            JarvisState.IDLE -> R.color.delta_idle
-            JarvisState.LISTENING -> R.color.delta_listening
-            JarvisState.PROCESSING -> R.color.delta_processing
-            JarvisState.SPEAKING -> R.color.delta_speaking
-            JarvisState.ERROR -> R.color.delta_error
+            PandaState.IDLE -> R.color.delta_idle
+            PandaState.LISTENING -> R.color.delta_listening
+            PandaState.PROCESSING -> R.color.delta_processing
+            PandaState.SPEAKING -> R.color.delta_speaking
+            PandaState.ERROR -> R.color.delta_error
         }
     }
 
     /**
-     * Get the resolved color value for a given JarvisState
+     * Get the resolved color value for a given PandaState
      */
-    fun getColor(context: Context, state: JarvisState): Int {
+    fun getColor(context: Context, state: PandaState): Int {
         val colorResId = getColorResourceId(state)
         return ContextCompat.getColor(context, colorResId)
     }
 
     /**
-     * Get the status text for a given JarvisState
+     * Get the status text for a given PandaState
      */
-    fun getStatusText(state: JarvisState): String {
+    fun getStatusText(state: PandaState): String {
         return when (state) {
-            JarvisState.IDLE -> "Ready, tap delta to wake me up!"
-            JarvisState.LISTENING -> "Listening..."
-            JarvisState.PROCESSING -> "Processing..."
-            JarvisState.SPEAKING -> "Speaking..."
-            JarvisState.ERROR -> "Error"
+            PandaState.IDLE -> "Ready, tap delta to wake me up!"
+            PandaState.LISTENING -> "Listening..."
+            PandaState.PROCESSING -> "Processing..."
+            PandaState.SPEAKING -> "Speaking..."
+            PandaState.ERROR -> "Error"
         }
     }
 
     /**
-     * Get the hex color string for a given JarvisState (for debugging/logging)
+     * Get the hex color string for a given PandaState (for debugging/logging)
      */
-    fun getColorHex(context: Context, state: JarvisState): String {
+    fun getColorHex(context: Context, state: PandaState): String {
         val color = getColor(context, state)
         return String.format("#%08X", color)
     }
 
     /**
-     * Get complete visual state information for a given JarvisState
+     * Get complete visual state information for a given PandaState
      */
-    fun getDeltaVisualState(context: Context, state: JarvisState): DeltaVisualState {
+    fun getDeltaVisualState(context: Context, state: PandaState): DeltaVisualState {
         return DeltaVisualState(
             state = state,
             color = getColor(context, state),
@@ -78,7 +78,7 @@ object DeltaStateColorMapper {
      * Get all available states with their visual information
      */
     fun getAllStates(context: Context): List<DeltaVisualState> {
-        return JarvisState.values().map { state ->
+        return PandaState.values().map { state ->
             getDeltaVisualState(context, state)
         }
     }
@@ -86,31 +86,31 @@ object DeltaStateColorMapper {
     /**
      * Check if a state represents an active operation (not idle or error)
      */
-    fun isActiveState(state: JarvisState): Boolean {
+    fun isActiveState(state: PandaState): Boolean {
         return when (state) {
-            JarvisState.LISTENING, JarvisState.PROCESSING, JarvisState.SPEAKING -> true
-            JarvisState.IDLE, JarvisState.ERROR -> false
+            PandaState.LISTENING, PandaState.PROCESSING, PandaState.SPEAKING -> true
+            PandaState.IDLE, PandaState.ERROR -> false
         }
     }
 
     /**
      * Check if a state represents an error condition
      */
-    fun isErrorState(state: JarvisState): Boolean {
-        return state == JarvisState.ERROR
+    fun isErrorState(state: PandaState): Boolean {
+        return state == PandaState.ERROR
     }
 
     /**
      * Get the priority of a state for determining which state to display
      * when multiple conditions might be true. Higher numbers = higher priority.
      */
-    fun getStatePriority(state: JarvisState): Int {
+    fun getStatePriority(state: PandaState): Int {
         return when (state) {
-            JarvisState.ERROR -> 5      // Highest priority
-            JarvisState.SPEAKING -> 4   // High priority
-            JarvisState.LISTENING -> 3  // Medium-high priority
-            JarvisState.PROCESSING -> 2 // Medium priority
-            JarvisState.IDLE -> 1       // Lowest priority
+            PandaState.ERROR -> 5      // Highest priority
+            PandaState.SPEAKING -> 4   // High priority
+            PandaState.LISTENING -> 3  // Medium-high priority
+            PandaState.PROCESSING -> 2 // Medium priority
+            PandaState.IDLE -> 1       // Lowest priority
         }
     }
 }

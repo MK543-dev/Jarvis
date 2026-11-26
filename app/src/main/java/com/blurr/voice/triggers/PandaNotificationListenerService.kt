@@ -7,9 +7,9 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
-class JarvisNotificationListenerService : NotificationListenerService() {
+class PandaNotificationListenerService : NotificationListenerService() {
 
-    private val TAG = "JarvisNotification"
+    private val TAG = "PandaNotification"
     private lateinit var triggerManager: TriggerManager
 
     override fun onCreate() {
@@ -50,7 +50,7 @@ class JarvisNotificationListenerService : NotificationListenerService() {
 
                 Log.d(TAG, "Found matching trigger for package: $packageName. Executing instruction: $finalInstruction")
                 // Use the TriggerReceiver to start the agent service
-                val intent = android.content.Intent(this@JarvisNotificationListenerService, TriggerReceiver::class.java).apply {
+                val intent = android.content.Intent(this@PandaNotificationListenerService, TriggerReceiver::class.java).apply {
                     action = TriggerReceiver.ACTION_EXECUTE_TASK
                     putExtra(TriggerReceiver.EXTRA_TASK_INSTRUCTION, finalInstruction)
                 }

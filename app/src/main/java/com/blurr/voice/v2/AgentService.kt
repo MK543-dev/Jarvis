@@ -32,6 +32,8 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import java.util.Queue
 import java.util.concurrent.ConcurrentLinkedQueue
+import org.json.JSONArray
+import org.json.JSONObject
 
 /**
  * A Foreground Service responsible for hosting and running the AI Agent.
@@ -87,11 +89,6 @@ class AgentService : Service() {
         }
 
         fun start(context: Context, task: String) {
-            val launchIntent = context.packageManager.getLaunchIntentForPackage(context.packageName)
-            if (launchIntent == null) {
-                Log.e("AgentService", "Jarvis package is not launchable; rejecting task")
-                return
-            }
             Log.d("AgentService", "Starting service with task: $task")
             val intent = Intent(context, AgentService::class.java).apply {
                 putExtra(EXTRA_TASK, task)
@@ -144,10 +141,6 @@ class AgentService : Service() {
     @RequiresApi(Build.VERSION_CODES.R)
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         Log.d(TAG, "onStartCommand received.")
-        if (packageManager.getLaunchIntentForPackage(packageName) == null) {
-            Log.e(TAG, "Jarvis package is not launchable; ignoring task entry")
-            return START_NOT_STICKY
-        }
 
         // Handle stop action
         if (intent?.action == ACTION_STOP_SERVICE) {
@@ -201,13 +194,13 @@ class AgentService : Service() {
 
             try {
                 Log.i(TAG, "Executing task: $task")
-                trackTaskLocal(task)
+                recordTaskHistory(task, "started", null, null)
                 agent.run(task)
-                trackTaskCompletion(task, true)
+                recordTaskHistory(task, "completed", true, null)
                 Log.i(TAG, "Task completed successfully: $task")
             } catch (e: Exception) {
                 Log.e(TAG, "Task failed with an exception: $task", e)
-                trackTaskCompletion(task, false, e.message)
+                recordTaskHistory(task, "failed", false, e.message)
                 // Optionally update notification to show error state
             }
         }
@@ -281,9 +274,19 @@ class AgentService : Service() {
             .build()
     }
 
-    private suspend fun trackTaskLocal(task: String) { Log.d(TAG, "Task tracking disabled") }
-
-    private suspend fun trackTaskCompletion(task: String, success: Boolean, errorMessage: String? = null) {
-        Log.d(TAG, "Task completion tracking disabled")
+    private fun recordTaskHistory(task: String, status: String, success: Boolean?, errorMessage: String?) {
+        val prefs = getSharedPreferences("jarvis_task_history", Context.MODE_PRIVATE)
+        val raw = prefs.getString("tasks", "[]") ?: "[]"
+        val array = JSONArray(raw)
+        val now = System.currentTimeMillis()
+        array.put(JSONObject()
+            .put("task", task)
+            .put("status", status)
+            .put("startedAt", if (status == "started") now else now)
+            .put("completedAt", if (status == "started") JSONObject.NULL else now)
+            .put("success", success ?: JSONObject.NULL)
+            .put("errorMessage", errorMessage ?: JSONObject.NULL))
+        while (array.length() > 100) array.remove(0)
+        prefs.edit().putString("tasks", array.toString()).apply()
     }
 }

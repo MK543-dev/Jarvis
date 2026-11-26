@@ -197,7 +197,7 @@
                 android:textSize="14sp"
                 android:lineSpacingExtra="2dp" />
 
-            <!-- Only Jarvis -->
+            <!-- Only Panda -->
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"

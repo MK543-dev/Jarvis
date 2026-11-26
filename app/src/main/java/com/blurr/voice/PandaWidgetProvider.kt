@@ -8,7 +8,7 @@ import android.content.Intent
 import android.os.Build
 import android.widget.RemoteViews
 
-class JarvisWidgetProvider : AppWidgetProvider() {
+class PandaWidgetProvider : AppWidgetProvider() {
 
     override fun onUpdate(
         context: Context,

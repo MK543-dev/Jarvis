@@ -11,8 +11,8 @@ import java.util.concurrent.ConcurrentHashMap
 class TriggerReceiver : BroadcastReceiver() {
 
     companion object {
-        const val ACTION_EXECUTE_TASK = "com.blurr.voice.action.EXECUTE_TASK"
-        const val EXTRA_TASK_INSTRUCTION = "com.blurr.voice.EXTRA_TASK_INSTRUCTION"
+        const val ACTION_EXECUTE_TASK = "com.jarvis.assistant.action.EXECUTE_TASK"
+        const val EXTRA_TASK_INSTRUCTION = "com.jarvis.assistant.EXTRA_TASK_INSTRUCTION"
         const val EXTRA_TRIGGER_ID = "com.blurr.voice.EXTRA_TRIGGER_ID"
         private const val TAG = "TriggerReceiver"
         private const val DEBOUNCE_INTERVAL_MS = 60 * 1000 // 1 minute

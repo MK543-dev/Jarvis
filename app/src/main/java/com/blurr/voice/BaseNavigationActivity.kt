@@ -61,14 +61,7 @@ abstract class BaseNavigationActivity : AppCompatActivity() {
             alpha = if (currentItem == NavItem.HOME) 1.0f else 0.7f
         }
         
-        findViewById<LinearLayout>(R.id.nav_upgrade).apply {
-            setOnClickListener {
-                if (currentItem != NavItem.UPGRADE) {
-                    navigateToActivity(ProPurchaseActivity::class.java, currentItem)
-                }
-            }
-            alpha = if (currentItem == NavItem.UPGRADE) 1.0f else 0.7f
-        }
+        findViewById<LinearLayout>(R.id.nav_upgrade)?.visibility = android.view.View.GONE
         
         findViewById<LinearLayout>(R.id.nav_settings).apply {
             setOnClickListener {

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
     <shortcut
-        android:shortcutId="wake_up_jarvis"
+        android:shortcutId="wake_up_panda"
         android:enabled="true"
         android:icon="@drawable/ic_mic"
         android:shortcutShortLabel="@string/shortcut_wake_up_short"

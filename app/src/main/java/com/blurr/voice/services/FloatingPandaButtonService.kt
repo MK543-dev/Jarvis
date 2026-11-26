@@ -17,24 +17,24 @@ import androidx.core.content.ContextCompat
 import com.blurr.voice.ConversationalAgentService
 import com.blurr.voice.R
 
-class FloatingJarvisButtonService : Service() {
+class FloatingPandaButtonService : Service() {
 
     private var windowManager: WindowManager? = null
     private var floatingButton: View? = null
 
     companion object {
-        private const val TAG = "FloatingJarvisButton"
+        private const val TAG = "FloatingPandaButton"
         var isRunning = false
     }
 
     override fun onCreate() {
         super.onCreate()
         isRunning = true
-        Log.d(TAG, "Floating Jarvis Button Service created")
+        Log.d(TAG, "Floating Panda Button Service created")
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        Log.d(TAG, "Floating Jarvis Button Service starting...")
+        Log.d(TAG, "Floating Panda Button Service starting...")
 
         if (!Settings.canDrawOverlays(this)) {
             Log.w(TAG, "Cannot show floating button: 'Draw over other apps' permission not granted.")
@@ -73,8 +73,8 @@ class FloatingJarvisButtonService : Service() {
 
             // Set up the button click listener
             button.setOnClickListener {
-                Log.d(TAG, "Floating Jarvis button clicked!")
-                triggerJarvisActivation()
+                Log.d(TAG, "Floating Panda button clicked!")
+                triggerPandaActivation()
             }
 
             val displayMetrics = resources.displayMetrics
@@ -100,7 +100,7 @@ class FloatingJarvisButtonService : Service() {
             }
 
             windowManager?.addView(floatingButton, params)
-            Log.d(TAG, "Floating Jarvis button added successfully")
+            Log.d(TAG, "Floating Panda button added successfully")
         } catch (e: Exception) {
             Log.e(TAG, "Error adding floating button", e)
             floatingButton = null
@@ -126,7 +126,7 @@ class FloatingJarvisButtonService : Service() {
     }
 
 
-    private fun triggerJarvisActivation() {
+    private fun triggerPandaActivation() {
         try {
             if (!ConversationalAgentService.isRunning) {
                 Log.d(TAG, "Starting ConversationalAgentService from floating button")
@@ -155,7 +155,7 @@ class FloatingJarvisButtonService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
-        Log.d(TAG, "Floating Jarvis Button Service destroying...")
+        Log.d(TAG, "Floating Panda Button Service destroying...")
         hideFloatingButton()
         isRunning = false
     }

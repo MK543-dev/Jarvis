@@ -143,50 +143,6 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Gemini API Keys"
-                android:textColor="@color/white"
-                android:textSize="18sp"
-                android:fontFamily="@font/playfair_display"
-                android:textStyle="bold" />
-
-            <EditText
-                android:id="@+id/editGeminiApiKeys"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:background="@drawable/edit_text_border"
-                android:hint="Comma-separated Gemini API keys"
-                android:inputType="text"
-                android:padding="12dp"
-                android:textColor="#CECECE"
-                android:textColorHint="#888888" />
-
-            <TextView
-                android:id="@+id/saveGeminiApiKeysButton"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:background="@drawable/rounded_button"
-                android:clickable="true"
-                android:focusable="true"
-                android:gravity="center"
-                android:padding="12dp"
-                android:text="Save API Keys"
-                android:textColor="@android:color/black"
-                android:textSize="16sp" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:background="@drawable/rounded_background"
-            android:orientation="vertical"
-            android:padding="16dp">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
                 android:text="Enable 'Hey Jarvis!'"
                 android:textColor="@color/white"
                 android:textSize="18sp"

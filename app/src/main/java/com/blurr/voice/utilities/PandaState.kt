@@ -1,9 +1,9 @@
 package com.blurr.voice.utilities
 
 /**
- * Represents the different states of the Jarvis app for visual feedback
+ * Represents the different states of the Panda app for visual feedback
  */
-enum class JarvisState {
+enum class PandaState {
     /**
      * App is ready and idle, no active conversation or processing
      */

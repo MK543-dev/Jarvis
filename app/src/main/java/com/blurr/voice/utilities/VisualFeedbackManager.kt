@@ -26,8 +26,8 @@ import androidx.core.view.WindowInsetsCompat
 import com.blurr.voice.AudioWaveView
 import com.blurr.voice.R
 import com.blurr.voice.ui.SmallDeltaGlowView
-import com.blurr.voice.utilities.JarvisState
-import com.blurr.voice.utilities.JarvisStateManager
+import com.blurr.voice.utilities.PandaState
+import com.blurr.voice.utilities.PandaStateManager
 import com.blurr.voice.utilities.TTSManager
 import com.blurr.voice.utilities.TtsVisualizer
 
@@ -43,15 +43,15 @@ class VisualFeedbackManager private constructor(private val context: Context) {
     private var inputBoxView: View? = null
     private var thinkingIndicatorView: View? = null
     private var smallDeltaGlowView: SmallDeltaGlowView? = null
-    private val jarvisStateManager by lazy { JarvisStateManager.getInstance(context) }
-    private val stateChangeListener: (JarvisState) -> Unit
+    private val pandaStateManager by lazy { PandaStateManager.getInstance(context) }
+    private val stateChangeListener: (PandaState) -> Unit
     private var speakingOverlay: View? = null
 
     init {
         stateChangeListener = { newState ->
             updateSmallDeltaVisuals(newState)
         }
-        jarvisStateManager.addStateChangeListener(stateChangeListener)
+        pandaStateManager.addStateChangeListener(stateChangeListener)
 
     }
 
@@ -504,7 +504,7 @@ class VisualFeedbackManager private constructor(private val context: Context) {
             try {
                 windowManager.addView(smallDeltaGlowView, params)
                 // Set the initial color and glow based on the *current* state
-                updateSmallDeltaVisuals(jarvisStateManager.getCurrentState())
+                updateSmallDeltaVisuals(pandaStateManager.getCurrentState())
                 Log.d(TAG, "Small delta glow view added.")
             } catch (e: Exception) {
                 Log.e(TAG, "Error adding small delta glow view", e)
@@ -533,7 +533,7 @@ class VisualFeedbackManager private constructor(private val context: Context) {
     /**
      * A new private method to update the small delta's appearance based on the app state.
      */
-    private fun updateSmallDeltaVisuals(state: JarvisState) {
+    private fun updateSmallDeltaVisuals(state: PandaState) {
         // Run on the main thread and only if the view exists
         mainHandler.post {
             smallDeltaGlowView?.let { view ->
