@@ -1,33 +1,70 @@
 package com.blurr.voice.utilities
 
+import android.content.Context
 import com.blurr.voice.BuildConfig
+import com.blurr.voice.MyApplication
 import java.util.concurrent.atomic.AtomicInteger
 
-/**
- * A thread-safe, singleton object to manage and rotate a list of API keys.
- * This ensures that every part of the app gets the next key in the sequence.
- */
 object ApiKeyManager {
-
-    private val apiKeys: List<String> = if (BuildConfig.GEMINI_API_KEYS.isNotEmpty()) {
-        BuildConfig.GEMINI_API_KEYS.split(",")
-    } else {
-        emptyList()
-    }
-
+    private const val PREFS_NAME = "JarvisSettings"
+    private const val GEMINI_KEYS_KEY = "gemini_api_keys"
     private val currentIndex = AtomicInteger(0)
 
-    /**
-     * Gets the next API key from the list in a circular, round-robin fashion.
-     * @return The next API key as a String.
-     */
-    fun getNextKey(): String {
-        if (apiKeys.isEmpty()) {
-            throw IllegalStateException("API key list is empty. Please add keys to ApiKeyManager.")
-        }
-        // Get the current index, then increment it for the next call.
-        // The modulo operator (%) makes it loop back to 0 when it reaches the end.
-        val index = currentIndex.getAndIncrement() % apiKeys.size
-        return apiKeys[index]
+    fun saveKeys(context: Context, keys: String) {
+        val trimmed = keys.trim()
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .edit()
+            .putString(GEMINI_KEYS_KEY, trimmed)
+            .apply()
+        // Preserve compatibility with the previous settings preferences.
+        context.getSharedPreferences("BlurrSettings", Context.MODE_PRIVATE)
+            .edit()
+            .putString(GEMINI_KEYS_KEY, trimmed)
+            .apply()
+        currentIndex.set(0)
     }
+
+    fun getSavedKeys(context: Context): String {
+        val jarvisSaved = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .getString(GEMINI_KEYS_KEY, null)?.trim()
+        val legacySaved = context.getSharedPreferences("BlurrSettings", Context.MODE_PRIVATE)
+            .getString(GEMINI_KEYS_KEY, null)?.trim()
+        return when {
+            !jarvisSaved.isNullOrEmpty() -> jarvisSaved
+            !legacySaved.isNullOrEmpty() -> legacySaved
+            else -> BuildConfig.GEMINI_API_KEYS
+        }
+    }
+
+    fun getKeys(context: Context? = null): List<String> {
+        val effectiveContext = context ?: try { MyApplication.appContext } catch (_: Exception) { null }
+        val source = if (effectiveContext != null) {
+            val jarvisSaved = effectiveContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                .getString(GEMINI_KEYS_KEY, null)?.trim()
+            val legacySaved = effectiveContext.getSharedPreferences("BlurrSettings", Context.MODE_PRIVATE)
+                .getString(GEMINI_KEYS_KEY, null)?.trim()
+            when {
+                !jarvisSaved.isNullOrEmpty() -> jarvisSaved
+                !legacySaved.isNullOrEmpty() -> legacySaved
+                else -> BuildConfig.GEMINI_API_KEYS
+            }
+        } else {
+            BuildConfig.GEMINI_API_KEYS
+        }
+        return source.split(',')
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+            .distinct()
+    }
+
+    fun getNextKey(context: Context? = null): String {
+        val keys = getKeys(context)
+        if (keys.isEmpty()) {
+            throw IllegalStateException("Gemini API key is not configured. Add a key in Settings.")
+        }
+        val index = currentIndex.getAndIncrement() % keys.size
+        return keys[index]
+    }
+
+    fun rotateKey(context: Context? = null): String = getNextKey(context)
 }

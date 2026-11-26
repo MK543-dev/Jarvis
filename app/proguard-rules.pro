@@ -41,14 +41,6 @@
 }
 
 # ----------------------------------------------------------------------------
-# 4. Firebase & Firestore
-# ----------------------------------------------------------------------------
-# Firestore uses reflection to map documents to objects. 
-# If you use .toObject(Class.class), those classes MUST be kept (covered in Section 2).
--keepattributes InnerClasses
--dontwarn com.google.firebase.**
-
-# ----------------------------------------------------------------------------
 # 5. Native Libraries (Picovoice)
 # ----------------------------------------------------------------------------
 # Picovoice uses JNI. If Java classes are renamed, the C++ code can't find them.

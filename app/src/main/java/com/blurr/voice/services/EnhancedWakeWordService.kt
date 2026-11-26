@@ -18,6 +18,7 @@ import com.blurr.voice.ConversationalAgentService
 import com.blurr.voice.MainActivity
 import com.blurr.voice.R
 import com.blurr.voice.api.PorcupineWakeWordDetector
+import com.blurr.voice.api.WakeWordDetector
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -25,6 +26,7 @@ import kotlinx.coroutines.SupervisorJob
 class EnhancedWakeWordService : Service() {
 
     private var porcupineDetector: PorcupineWakeWordDetector? = null
+    private var nativeDetector: WakeWordDetector? = null
     private var usePorcupine = false
     private val serviceScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
 
@@ -68,8 +70,8 @@ class EnhancedWakeWordService : Service() {
 
         val engineName = if (usePorcupine) "Porcupine" else "STT"
         val notification: Notification = NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("Blurr Wake Word")
-            .setContentText("Listening for 'Panda' with Porcupine engine...")
+            .setContentTitle("Jarvis Wake Word")
+            .setContentText("Listening for 'Hey Jarvis'...")
             .setSmallIcon(R.mipmap.ic_launcher)
             .setContentIntent(pendingIntent)
             .build()
@@ -98,7 +100,7 @@ class EnhancedWakeWordService : Service() {
                 val serviceIntent = Intent(this, ConversationalAgentService::class.java)
                 ContextCompat.startForegroundService(this, serviceIntent)
 
-                Toast.makeText(this, "Panda listening...", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Jarvis listening...", Toast.LENGTH_SHORT).show()
             } else {
                 Log.d("EnhancedWakeWordService", "Conversational agent is already running.")
             }
@@ -114,13 +116,13 @@ class EnhancedWakeWordService : Service() {
 
         try {
             if (usePorcupine) {
-                Log.d("EnhancedWakeWordService", "Using Porcupine wake word detection")
+                Log.d("EnhancedWakeWordService", "Using commercial Porcupine wake word detection")
                 porcupineDetector = PorcupineWakeWordDetector(this, onWakeWordDetected, onApiFailure)
                 porcupineDetector?.start()
             } else {
-                Log.d("EnhancedWakeWordService", "Using Porcupine wake word detection")
-                porcupineDetector = PorcupineWakeWordDetector(this, onWakeWordDetected, onApiFailure)
-                porcupineDetector?.start()
+                Log.d("EnhancedWakeWordService", "Using native Android STT wake word fallback")
+                nativeDetector = WakeWordDetector(this, onWakeWordDetected)
+                nativeDetector?.start()
             }
         } catch (e: Exception) {
             Log.e("EnhancedWakeWordService", "Error starting wake word detection: ${e.message}")
@@ -136,6 +138,8 @@ class EnhancedWakeWordService : Service() {
         
         porcupineDetector?.stop()
         porcupineDetector = null
+        nativeDetector?.stop()
+        nativeDetector = null
         
         isRunning = false
         Log.d("EnhancedWakeWordService", "Service destroyed, isRunning set to false")

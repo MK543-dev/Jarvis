@@ -8,19 +8,19 @@ import com.blurr.voice.ConversationalAgentService
 import java.util.concurrent.CopyOnWriteArrayList
 
 /**
- * Manages the state of the Panda app and provides callbacks for state changes.
+ * Manages the state of the Jarvis app and provides callbacks for state changes.
  * This class monitors various service components to determine the current app state.
  */
-class PandaStateManager private constructor(private val context: Context) {
+class JarvisStateManager private constructor(private val context: Context) {
 
     companion object {
-        private const val TAG = "PandaStateManager"
+        private const val TAG = "JarvisStateManager"
         
-        @Volatile private var INSTANCE: PandaStateManager? = null
+        @Volatile private var INSTANCE: JarvisStateManager? = null
 
-        fun getInstance(context: Context): PandaStateManager {
+        fun getInstance(context: Context): JarvisStateManager {
             return INSTANCE ?: synchronized(this) {
-                INSTANCE ?: PandaStateManager(context.applicationContext).also { INSTANCE = it }
+                INSTANCE ?: JarvisStateManager(context.applicationContext).also { INSTANCE = it }
             }
         }
     }
@@ -30,12 +30,12 @@ class PandaStateManager private constructor(private val context: Context) {
     private val visualFeedbackManager by lazy { VisualFeedbackManager.getInstance(context) }
     
     // State management
-    private var currentState: PandaState = PandaState.IDLE
+    private var currentState: JarvisState = JarvisState.IDLE
     private var hasRecentError: Boolean = false
     private var errorClearRunnable: Runnable? = null
     
     // Listeners for state changes
-    private val stateChangeListeners = CopyOnWriteArrayList<(PandaState) -> Unit>()
+    private val stateChangeListeners = CopyOnWriteArrayList<(JarvisState) -> Unit>()
     
     // Monitoring flags
     private var isMonitoring = false
@@ -44,26 +44,26 @@ class PandaStateManager private constructor(private val context: Context) {
     /**
      * Add a listener for state changes
      */
-    fun addStateChangeListener(listener: (PandaState) -> Unit) {
+    fun addStateChangeListener(listener: (JarvisState) -> Unit) {
         stateChangeListeners.add(listener)
     }
     
     /**
      * Remove a state change listener
      */
-    fun removeStateChangeListener(listener: (PandaState) -> Unit) {
+    fun removeStateChangeListener(listener: (JarvisState) -> Unit) {
         stateChangeListeners.remove(listener)
     }
     
     /**
      * Get the current state
      */
-    fun getCurrentState(): PandaState = currentState
+    fun getCurrentState(): JarvisState = currentState
     
     /**
-     * Manually set the Panda state (called from ConversationalAgentService)
+     * Manually set the Jarvis state (called from ConversationalAgentService)
      */
-    fun setState(newState: PandaState) {
+    fun setState(newState: JarvisState) {
         Log.d(TAG, "State manually set to: $newState")
         updateState(newState)
     }
@@ -81,7 +81,7 @@ class PandaStateManager private constructor(private val context: Context) {
         Log.d(TAG, "Starting state monitoring")
         
         // Set initial state to IDLE when monitoring starts
-        setState(PandaState.IDLE)
+        setState(JarvisState.IDLE)
     }
     
     /**
@@ -100,7 +100,7 @@ class PandaStateManager private constructor(private val context: Context) {
         errorClearRunnable?.let { mainHandler.removeCallbacks(it) }
         
         // Reset to idle state
-        setState(PandaState.IDLE)
+        setState(JarvisState.IDLE)
     }
     
     /**
@@ -108,13 +108,13 @@ class PandaStateManager private constructor(private val context: Context) {
      */
     fun triggerErrorState() {
         Log.d(TAG, "Error state triggered")
-        setState(PandaState.ERROR)
+        setState(JarvisState.ERROR)
         
         // Clear error state after 3 seconds and return to idle
         errorClearRunnable?.let { mainHandler.removeCallbacks(it) }
         errorClearRunnable = Runnable {
             Log.d(TAG, "Error state cleared, returning to idle")
-            setState(PandaState.IDLE)
+            setState(JarvisState.IDLE)
         }
         mainHandler.postDelayed(errorClearRunnable!!, 3000)
     }
@@ -124,7 +124,7 @@ class PandaStateManager private constructor(private val context: Context) {
     /**
      * Update the current state and notify listeners
      */
-    private fun updateState(newState: PandaState) {
+    private fun updateState(newState: JarvisState) {
         val previousState = currentState
         currentState = newState
         
@@ -147,11 +147,11 @@ class PandaStateManager private constructor(private val context: Context) {
      */
     fun getStatusText(): String {
         return when (currentState) {
-            PandaState.IDLE -> "Ready"
-            PandaState.LISTENING -> "Listening..."
-            PandaState.PROCESSING -> "Processing..."
-            PandaState.SPEAKING -> "Speaking..."
-            PandaState.ERROR -> "Error"
+            JarvisState.IDLE -> "Ready"
+            JarvisState.LISTENING -> "Listening..."
+            JarvisState.PROCESSING -> "Processing..."
+            JarvisState.SPEAKING -> "Speaking..."
+            JarvisState.ERROR -> "Error"
         }
     }
     

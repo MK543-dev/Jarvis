@@ -29,11 +29,13 @@ class WakeWordManager(
 
     private fun startWakeWordService() {
         if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+            val hasCommercialKey = false
             val serviceIntent = Intent(context, EnhancedWakeWordService::class.java).apply {
-                putExtra(EnhancedWakeWordService.EXTRA_USE_PORCUPINE, true)
+                putExtra(EnhancedWakeWordService.EXTRA_USE_PORCUPINE, false)
             }
             ContextCompat.startForegroundService(context, serviceIntent)
-            Toast.makeText(context, context.getString(R.string.wake_word_enabled, "Porcupine"), Toast.LENGTH_SHORT).show()
+            val engine = if (hasCommercialKey) "Porcupine" else "Native"
+            Toast.makeText(context, context.getString(R.string.wake_word_enabled, engine), Toast.LENGTH_SHORT).show()
         } else {
             permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
         }
